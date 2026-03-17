@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient, createAuthClient } from "@/lib/supabase/server";
 
 async function requireAuth() {
+  const authClient = await createAuthClient();
+  const { data: { user } } = await authClient.auth.getUser();
   const supabase = createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
   return { supabase, user };
 }
 
