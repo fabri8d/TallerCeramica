@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
+import { format, isToday } from "date-fns";
 import { MORNING_SLOTS, AFTERNOON_SLOTS } from "@/lib/constants";
 import type { TimeSlot } from "@/types";
 
@@ -45,6 +45,17 @@ export default function SlotGrid({ date, selected, onSelect }: SlotGridProps) {
     );
   }
 
+  const todayDate = isToday(date);
+  const nowMinutes = todayDate
+    ? new Date().getHours() * 60 + new Date().getMinutes()
+    : -1;
+
+  function isPastSlot(slotTime: string) {
+    if (!todayDate) return false;
+    const [h, m] = slotTime.split(":").map(Number);
+    return h * 60 + m <= nowMinutes;
+  }
+
   const renderSlots = (slots: TimeSlot[], title: string) => (
     <div>
       <p className="font-sans text-xs text-clay-400 uppercase tracking-wider font-bold mb-2">
@@ -52,7 +63,7 @@ export default function SlotGrid({ date, selected, onSelect }: SlotGridProps) {
       </p>
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
         {slots.map((slot) => {
-          const occupied = occupiedSlots.includes(slot.time);
+          const occupied = occupiedSlots.includes(slot.time) || isPastSlot(slot.time);
           const isSelected = selected === slot.time;
           return (
             <button
