@@ -15,6 +15,8 @@ export default function AdminPublicationsList({ initialPublications }: Props) {
   const [publications, setPublications] = useState(initialPublications);
   const [search, setSearch] = useState("");
   const [estadoFilter, setEstadoFilter] = useState<EstadoFilter>("todas");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -27,12 +29,69 @@ export default function AdminPublicationsList({ initialPublications }: Props) {
     });
   }, [publications, search, estadoFilter]);
 
+  const filteredIds = useMemo(() => filtered.map((p) => p.id), [filtered]);
+  const allSelected = filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (allSelected) {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        filteredIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelected((prev) => new Set([...prev, ...filteredIds]));
+    }
+  }
+
   async function handleDelete(id: string, titulo: string) {
     if (!confirm(`¿Eliminar "${titulo}"? Esta acción no se puede deshacer.`)) return;
     const res = await fetch(`/api/publications/${id}`, { method: "DELETE" });
-    if (res.ok) setPublications((prev) => prev.filter((p) => p.id !== id));
-    else alert("Error al eliminar la publicación");
+    if (res.ok) {
+      setPublications((prev) => prev.filter((p) => p.id !== id));
+      setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
+    } else alert("Error al eliminar la publicación");
   }
+
+  async function bulkDelete() {
+    const ids = [...selected].filter((id) => filteredIds.includes(id));
+    if (!ids.length) return;
+    if (!confirm(`¿Eliminar ${ids.length} publicación${ids.length !== 1 ? "es" : ""}? Esta acción no se puede deshacer.`)) return;
+    setBulkLoading(true);
+    await Promise.all(ids.map((id) => fetch(`/api/publications/${id}`, { method: "DELETE" })));
+    setPublications((prev) => prev.filter((p) => !ids.includes(p.id)));
+    setSelected((prev) => { const n = new Set(prev); ids.forEach((id) => n.delete(id)); return n; });
+    setBulkLoading(false);
+  }
+
+  async function bulkSetEstado(estado: "disponible" | "agotado") {
+    const ids = [...selected].filter((id) => filteredIds.includes(id));
+    if (!ids.length) return;
+    setBulkLoading(true);
+    await Promise.all(
+      ids.map((id) =>
+        fetch(`/api/publications/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ estado }),
+        })
+      )
+    );
+    setPublications((prev) =>
+      prev.map((p) => (ids.includes(p.id) ? { ...p, estado } : p))
+    );
+    setBulkLoading(false);
+  }
+
+  const selectedInView = filteredIds.filter((id) => selected.has(id)).length;
 
   const estadoButtons: { value: EstadoFilter; label: string }[] = [
     { value: "todas", label: "Todas" },
@@ -68,6 +127,38 @@ export default function AdminPublicationsList({ initialPublications }: Props) {
         </div>
       </div>
 
+      {/* Bulk action bar */}
+      {selectedInView > 0 && (
+        <div className="flex items-center gap-3 bg-terracotta-50 border border-terracotta-200 rounded-sm px-4 py-2.5">
+          <span className="font-sans text-sm font-bold text-terracotta-700">
+            {selectedInView} seleccionada{selectedInView !== 1 ? "s" : ""}
+          </span>
+          <div className="flex gap-2 ml-auto">
+            <button
+              onClick={() => bulkSetEstado("disponible")}
+              disabled={bulkLoading}
+              className="font-sans text-xs font-bold px-3 py-1.5 rounded-sm bg-terracotta-100 text-terracotta-700 hover:bg-terracotta-200 disabled:opacity-50 transition-colors"
+            >
+              Marcar Disponible
+            </button>
+            <button
+              onClick={() => bulkSetEstado("agotado")}
+              disabled={bulkLoading}
+              className="font-sans text-xs font-bold px-3 py-1.5 rounded-sm bg-clay-100 text-clay-600 hover:bg-clay-200 disabled:opacity-50 transition-colors"
+            >
+              Marcar Agotado
+            </button>
+            <button
+              onClick={bulkDelete}
+              disabled={bulkLoading}
+              className="font-sans text-xs font-bold px-3 py-1.5 rounded-sm bg-red-100 text-red-600 hover:bg-red-200 disabled:opacity-50 transition-colors"
+            >
+              {bulkLoading ? "..." : "Eliminar"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       {filtered.length === 0 ? (
         <div className="bg-white rounded-sm p-12 text-center shadow-sm">
@@ -85,6 +176,15 @@ export default function AdminPublicationsList({ initialPublications }: Props) {
           <table className="w-full">
             <thead className="bg-clay-100 border-b border-linen">
               <tr>
+                <th className="px-4 py-3 w-8">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    className="rounded cursor-pointer accent-terracotta-500"
+                    title={allSelected ? "Deseleccionar todos" : "Seleccionar todos"}
+                  />
+                </th>
                 <th className="font-sans text-xs text-clay-400 uppercase tracking-wider text-left px-4 py-3">Obra</th>
                 <th className="font-sans text-xs text-clay-400 uppercase tracking-wider text-left px-4 py-3 hidden sm:table-cell">Autor</th>
                 <th className="font-sans text-xs text-clay-400 uppercase tracking-wider text-left px-4 py-3">Estado</th>
@@ -94,8 +194,17 @@ export default function AdminPublicationsList({ initialPublications }: Props) {
             <tbody className="divide-y divide-linen">
               {filtered.map((pub) => {
                 const firstImage = pub.media?.find((m) => m.type === "image");
+                const isSelected = selected.has(pub.id);
                 return (
-                  <tr key={pub.id} className="hover:bg-clay-100 transition-colors">
+                  <tr key={pub.id} className={`transition-colors ${isSelected ? "bg-terracotta-50" : "hover:bg-clay-100"}`}>
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleOne(pub.id)}
+                        className="rounded cursor-pointer accent-terracotta-500"
+                      />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-clay-100 rounded-sm overflow-hidden flex-shrink-0 relative">

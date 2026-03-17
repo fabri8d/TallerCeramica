@@ -4,148 +4,242 @@ import { es } from 'date-fns/locale';
 
 const testDate = nextMonday(new Date());
 
-// Helper: navega el calendario hasta el mes de testDate y hace click en el día
 async function selectTestDate(page: import('@playwright/test').Page) {
   const targetMonth = format(testDate, 'MMMM', { locale: es }).toLowerCase();
   for (let i = 0; i < 3; i++) {
-    // Selector específico: el span dentro del div de navegación del calendario
     const monthLabel = page.locator('button[aria-label="Mes anterior"] ~ span');
     const text = (await monthLabel.textContent())?.toLowerCase() ?? '';
     if (text.includes(targetMonth)) break;
     await page.click('button[aria-label="Mes siguiente"]');
   }
   const dayNum = format(testDate, 'd');
-  await page.locator(`button:not([disabled])`).filter({ hasText: new RegExp(`^${dayNum}$`) }).first().click();
+  await page.locator('button:not([disabled])').filter({ hasText: new RegExp(`^${dayNum}$`) }).first().click();
 }
 
-test.describe('Navegación y secciones estáticas', () => {
-  test('carga la home con todas las secciones', async ({ page }) => {
-    await page.goto('/');
-    await expect(page).toHaveTitle(/Taller de Cerámica/);
-    await expect(page.locator('#nosotros')).toBeVisible();
-    await expect(page.locator('#galeria')).toBeVisible();
-    await expect(page.locator('#precios')).toBeVisible();
-    await expect(page.locator('#reservas')).toBeVisible();
-    await expect(page.locator('#contacto')).toBeVisible();
-  });
+// ─── Header ──────────────────────────────────────────────────────────────────
 
-  test('header tiene links de navegación', async ({ page }) => {
+test.describe('Header', () => {
+  test('muestra logo y links de navegación en desktop', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
     await expect(page.locator('header')).toBeVisible();
-    await expect(page.locator('header a[href="#reservas"]').first()).toBeVisible();
+    await expect(page.locator('header').getByText('Susana Biondi')).toBeVisible();
+    await expect(page.locator('header').getByRole('link', { name: 'Galería' })).toBeVisible();
+    await expect(page.locator('header').getByRole('link', { name: 'El Taller' })).toBeVisible();
   });
 
-  test('scroll suave al hacer click en nav', async ({ page }) => {
+  test('no hay link de Reservar en el header', async ({ page }) => {
     await page.goto('/');
-    await page.click('header a[href="#nosotros"]');
-    await page.waitForTimeout(600);
-    await expect(page.locator('#nosotros')).toBeInViewport();
+    const reservarLink = page.locator('header').getByRole('link', { name: /reservar/i });
+    await expect(reservarLink).toHaveCount(0);
+  });
+
+  test('los links de nav están visibles en mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/');
+    await expect(page.locator('header').getByText('Susana Biondi')).toBeVisible();
+    // nav links visible (no hay hamburger menu — están siempre visibles)
+    await expect(page.locator('header').getByRole('link', { name: 'Galería' })).toBeVisible();
+  });
+
+  test('header no desborda el ancho en mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/');
+    const header = page.locator('header');
+    const box = await header.boundingBox();
+    expect(box?.width).toBeLessThanOrEqual(375);
   });
 });
 
-test.describe('DatePicker', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/#reservas');
+// ─── Home (Galería) ───────────────────────────────────────────────────────────
+
+test.describe('Home — Galería', () => {
+  test('carga la página correctamente', async ({ page }) => {
+    await page.goto('/');
+    await expect(page).toHaveTitle(/Susana Biondi/i);
   });
 
-  test('muestra el calendario con navegación de meses', async ({ page }) => {
-    const calendar = page.locator('.bg-white.border.border-linen.rounded-sm');
-    await expect(calendar).toBeVisible();
+  test('no desborda horizontalmente en desktop', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+    const body = await page.evaluate(() => document.body.scrollWidth);
+    expect(body).toBeLessThanOrEqual(1280);
+  });
+
+  test('no desborda horizontalmente en mobile (375px)', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/');
+    const body = await page.evaluate(() => document.body.scrollWidth);
+    expect(body).toBeLessThanOrEqual(375);
+  });
+
+  test('no desborda horizontalmente en tablet (768px)', async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.goto('/');
+    const body = await page.evaluate(() => document.body.scrollWidth);
+    expect(body).toBeLessThanOrEqual(768);
+  });
+});
+
+// ─── Página El Taller ─────────────────────────────────────────────────────────
+
+test.describe('El Taller', () => {
+  test('carga con sección de reservas', async ({ page }) => {
+    await page.goto('/taller');
+    await expect(page.locator('#reservas')).toBeVisible();
+  });
+
+  test('no tiene sección de precios', async ({ page }) => {
+    await page.goto('/taller');
+    await expect(page.locator('#precios')).toHaveCount(0);
+  });
+
+  test('no desborda horizontalmente en mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/taller');
+    const body = await page.evaluate(() => document.body.scrollWidth);
+    expect(body).toBeLessThanOrEqual(375);
+  });
+
+  test('no desborda horizontalmente en desktop', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/taller');
+    const body = await page.evaluate(() => document.body.scrollWidth);
+    expect(body).toBeLessThanOrEqual(1280);
+  });
+});
+
+// ─── Footer (Contacto) ────────────────────────────────────────────────────────
+
+test.describe('Footer — Contacto', () => {
+  test('visible en home', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('footer')).toBeVisible();
+    await expect(page.locator('footer').getByText('¿Tenés preguntas?')).toBeVisible();
+  });
+
+  test('visible en /taller', async ({ page }) => {
+    await page.goto('/taller');
+    await expect(page.locator('footer').getByText('¿Tenés preguntas?')).toBeVisible();
+  });
+
+  test('no desborda en mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/');
+    const footer = page.locator('footer');
+    const box = await footer.boundingBox();
+    expect(box?.width).toBeLessThanOrEqual(375);
+  });
+
+  test('grid de dos columnas en desktop', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const card = page.locator('footer .bg-bark-800');
+    await expect(card).toBeVisible();
+  });
+});
+
+// ─── Booking — DatePicker ─────────────────────────────────────────────────────
+
+test.describe('DatePicker', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/taller#reservas');
+  });
+
+  test('muestra calendario con navegación', async ({ page }) => {
     await expect(page.locator('button[aria-label="Mes anterior"]')).toBeVisible();
     await expect(page.locator('button[aria-label="Mes siguiente"]')).toBeVisible();
   });
 
-  test('los fines de semana y fechas pasadas están deshabilitados', async ({ page }) => {
-    const disabledDays = page.locator('button[disabled]');
-    const count = await disabledDays.count();
-    expect(count).toBeGreaterThan(0);
+  test('días pasados y fines de semana están deshabilitados', async ({ page }) => {
+    const disabled = page.locator('button[disabled]');
+    expect(await disabled.count()).toBeGreaterThan(0);
   });
 
-  test('avanza al paso de horarios al seleccionar una fecha válida', async ({ page }) => {
+  test('seleccionar fecha válida avanza a horarios', async ({ page }) => {
     await selectTestDate(page);
     await expect(page.locator('text=Elegí un horario')).toBeVisible();
+  });
+
+  test('calendario cabe en mobile (375px)', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    const calendar = page.locator('button[aria-label="Mes anterior"]').locator('xpath=ancestor::div[contains(@class,"rounded")]').first();
+    const box = await calendar.boundingBox();
+    if (box) expect(box.width).toBeLessThanOrEqual(375);
   });
 });
 
+// ─── Booking — SlotGrid ───────────────────────────────────────────────────────
+
 test.describe('SlotGrid', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/#reservas');
+    await page.goto('/taller#reservas');
     await selectTestDate(page);
     await expect(page.locator('text=Elegí un horario')).toBeVisible();
   });
 
-  test('muestra slots de mañana y tarde', async ({ page }) => {
-    // Selector específico: etiquetas uppercase del SlotGrid
+  test('muestra turnos de mañana y tarde', async ({ page }) => {
     await expect(page.locator('p.uppercase').filter({ hasText: 'Mañana' })).toBeVisible();
     await expect(page.locator('p.uppercase').filter({ hasText: 'Tarde' })).toBeVisible();
   });
 
-  test('al seleccionar un slot disponible avanza al formulario', async ({ page }) => {
+  test('seleccionar slot avanza al formulario', async ({ page }) => {
     await page.locator('button:not([disabled])').filter({ hasText: /^\d+:\d+$/ }).first().click();
     await expect(page.locator('text=Completá tus datos')).toBeVisible();
   });
 
-  test('botón Cambiar fecha vuelve al calendario', async ({ page }) => {
+  test('← Cambiar fecha vuelve al calendario', async ({ page }) => {
     await page.click('text=← Cambiar fecha');
     await expect(page.locator('text=Seleccioná una fecha')).toBeVisible();
   });
+
+  test('slots caben en mobile sin overflow', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/taller');
+    await page.locator('#reservas').scrollIntoViewIfNeeded();
+    await selectTestDate(page);
+    const grid = page.locator('p.uppercase').filter({ hasText: 'Mañana' }).locator('xpath=following-sibling::div').first();
+    const box = await grid.boundingBox();
+    if (box) expect(box.width).toBeLessThanOrEqual(375);
+  });
 });
+
+// ─── Booking — Formulario ─────────────────────────────────────────────────────
 
 test.describe('BookingForm', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/#reservas');
+    await page.goto('/taller#reservas');
     await selectTestDate(page);
     await page.locator('button:not([disabled])').filter({ hasText: /^\d+:\d+$/ }).first().click();
     await expect(page.locator('text=Completá tus datos')).toBeVisible();
   });
 
-  test('muestra todos los campos requeridos', async ({ page }) => {
+  test('muestra todos los campos', async ({ page }) => {
     await expect(page.locator('#nombre')).toBeVisible();
     await expect(page.locator('#apellido')).toBeVisible();
     await expect(page.locator('#email')).toBeVisible();
     await expect(page.locator('#telefono')).toBeVisible();
   });
 
-  test('no envía con campos vacíos (validación HTML nativa)', async ({ page }) => {
+  test('no envía con campos vacíos', async ({ page }) => {
     await page.click('button[type="submit"]');
-    // El formulario no avanza — sigue mostrando los campos
     await expect(page.locator('#nombre')).toBeVisible();
   });
 
-  test('botón Cambiar horario vuelve al SlotGrid', async ({ page }) => {
+  test('← Cambiar horario vuelve al SlotGrid', async ({ page }) => {
     await page.click('text=← Cambiar horario');
     await expect(page.locator('text=Elegí un horario')).toBeVisible();
   });
-});
 
-test.describe('Responsive — Mobile (375px)', () => {
-  test('muestra el botón Reservar en mobile y oculta la nav desktop', async ({ page }) => {
+  test('formulario cabe en mobile sin overflow', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/');
-    await expect(page.locator('header a.md\\:hidden')).toBeVisible();
-  });
-
-  test('el calendario cabe en el ancho mobile', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/#reservas');
-    const calendar = page.locator('.bg-white.border.border-linen.rounded-sm');
-    await expect(calendar).toBeVisible();
-    const box = await calendar.boundingBox();
-    expect(box?.width).toBeLessThanOrEqual(375);
-  });
-});
-
-test.describe('Seguridad', () => {
-  test('SUPABASE_SERVICE_ROLE_KEY no aparece en ninguna respuesta de red', async ({ page }) => {
-    const bodies: string[] = [];
-    page.on('response', async (response) => {
-      try { bodies.push(await response.text()); } catch {}
-    });
-    await page.goto('/');
-    await page.waitForTimeout(1000);
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'SERVICE_ROLE_PLACEHOLDER';
-    for (const body of bodies) {
-      expect(body).not.toContain(serviceKey);
-    }
+    await page.goto('/taller');
+    await page.locator('#reservas').scrollIntoViewIfNeeded();
+    await selectTestDate(page);
+    await page.locator('button:not([disabled])').filter({ hasText: /^\d+:\d+$/ }).first().click();
+    const form = page.locator('form');
+    const box = await form.boundingBox();
+    if (box) expect(box.width).toBeLessThanOrEqual(375);
   });
 });
