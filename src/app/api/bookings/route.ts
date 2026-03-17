@@ -5,6 +5,15 @@ import { isWeekend, isBefore, startOfToday, parseISO } from "date-fns";
 import { ALL_SLOTS } from "@/lib/constants";
 import type { BookingFormData } from "@/types";
 
+async function getSlotCapacity(supabase: ReturnType<typeof createServerSupabaseClient>): Promise<number> {
+  const { data } = await supabase
+    .from("settings")
+    .select("value")
+    .eq("key", "slot_capacity")
+    .single();
+  return data ? parseInt(data.value, 10) : 5;
+}
+
 // GET /api/bookings?date=YYYY-MM-DD
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -15,20 +24,35 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createServerSupabaseClient();
-  const { data, error } = await supabase
-    .from("bookings")
-    .select("slot_time")
-    .eq("booking_date", date)
-    .eq("status", "confirmed");
 
-  if (error) {
-    console.error("Supabase GET error:", error);
+  const [capacityResult, bookingsResult] = await Promise.all([
+    getSlotCapacity(supabase),
+    supabase
+      .from("bookings")
+      .select("slot_time")
+      .eq("booking_date", date)
+      .eq("status", "confirmed"),
+  ]);
+
+  if (bookingsResult.error) {
+    console.error("Supabase GET error:", bookingsResult.error);
     return NextResponse.json({ error: "Error al consultar disponibilidad" }, { status: 500 });
   }
 
-  const occupied_slots = (data ?? []).map((row: { slot_time: string }) =>
-    row.slot_time.substring(0, 5)
-  );
+  const capacity = capacityResult;
+  const bookings = bookingsResult.data ?? [];
+
+  // Count bookings per slot
+  const countsBySlot: Record<string, number> = {};
+  for (const row of bookings) {
+    const slot = row.slot_time.substring(0, 5);
+    countsBySlot[slot] = (countsBySlot[slot] ?? 0) + 1;
+  }
+
+  // A slot is "occupied" when it reaches capacity
+  const occupied_slots = Object.entries(countsBySlot)
+    .filter(([, count]) => count >= capacity)
+    .map(([slot]) => slot);
 
   return NextResponse.json({ occupied_slots });
 }
@@ -85,27 +109,36 @@ export async function POST(request: NextRequest) {
 
   const supabase = createServerSupabaseClient();
 
+  // Check capacity
+  const [capacity, { count, error: countError }] = await Promise.all([
+    getSlotCapacity(supabase),
+    supabase
+      .from("bookings")
+      .select("id", { count: "exact", head: true })
+      .eq("booking_date", booking_date)
+      .eq("slot_time", slot_time)
+      .eq("status", "confirmed"),
+  ]);
+
+  if (countError) {
+    console.error("Supabase count error:", countError);
+    return NextResponse.json({ error: "Error al verificar disponibilidad" }, { status: 500 });
+  }
+
+  if ((count ?? 0) >= capacity) {
+    return NextResponse.json(
+      { error: "Este turno ya está completo. Por favor elegí otro horario." },
+      { status: 409 }
+    );
+  }
+
   const { data, error } = await supabase
     .from("bookings")
-    .insert({
-      nombre,
-      apellido,
-      email,
-      telefono,
-      booking_date,
-      slot_time,
-    })
+    .insert({ nombre, apellido, email, telefono, booking_date, slot_time })
     .select()
     .single();
 
   if (error) {
-    // Unique constraint violation → slot already taken
-    if (error.code === "23505") {
-      return NextResponse.json(
-        { error: "Este turno ya está reservado. Por favor elegí otro horario." },
-        { status: 409 }
-      );
-    }
     console.error("Supabase POST error:", error);
     return NextResponse.json({ error: "Error al crear la reserva" }, { status: 500 });
   }

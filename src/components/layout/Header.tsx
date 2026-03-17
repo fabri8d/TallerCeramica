@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 const navLinks = [
   { href: "/", label: "Galería" },
   { href: "/taller", label: "El Taller" },
-  { href: "/taller#reservas", label: "Reservar" },
 ];
 
 export default function Header() {
@@ -38,12 +37,6 @@ export default function Header() {
             ))}
           </nav>
 
-          <Link
-            href="/taller#reservas"
-            className="bg-terracotta-500 hover:bg-terracotta-600 text-white font-sans text-sm font-bold px-4 py-2 rounded-sm transition-colors"
-          >
-            Reservar turno
-          </Link>
         </div>
       </div>
     </header>
