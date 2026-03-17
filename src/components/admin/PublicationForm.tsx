@@ -46,7 +46,7 @@ export default function PublicationForm({ publication }: Props) {
       estado: form.estado,
     };
 
-    if (isEdit && savedId) {
+    if (savedId) {
       const res = await fetch(`/api/publications/${savedId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
