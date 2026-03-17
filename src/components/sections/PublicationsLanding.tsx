@@ -45,12 +45,6 @@ export default function PublicationsLanding() {
             Todo lo que ves acá fue creado a mano en nuestro taller por nuestros alumnos.
             Cada pieza es única — si algo te interesa, consultanos directo por WhatsApp.
           </p>
-          <a
-            href="/taller"
-            className="inline-block mt-6 font-sans text-sm text-terracotta-400 hover:text-terracotta-300 underline transition-colors"
-          >
-            Conocé más sobre el taller →
-          </a>
         </div>
       </section>
 
