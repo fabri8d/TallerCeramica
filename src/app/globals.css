@@ -1,26 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Lato:wght@300;400;700&display=swap');
+
 @import "tailwindcss";
 
+@theme {
+  --color-terracotta-50: #fdf2ee;
+  --color-terracotta-100: #fbe1d5;
+  --color-terracotta-200: #f7c2aa;
+  --color-terracotta-300: #f1997a;
+  --color-terracotta-400: #e97049;
+  --color-terracotta-500: #c9613a;
+  --color-terracotta-600: #b04e2d;
+  --color-terracotta-700: #923d23;
+  --color-terracotta-800: #77301c;
+  --color-terracotta-900: #5f2517;
+
+  --color-clay-50: #fdf8f4;
+  --color-clay-100: #f5ede4;
+  --color-clay-200: #ead8c8;
+  --color-clay-300: #dbbfa7;
+  --color-clay-400: #c9a07f;
+  --color-clay-500: #b8845e;
+  --color-clay-600: #9e6a47;
+  --color-clay-700: #82533a;
+  --color-clay-800: #6a4330;
+  --color-clay-900: #553628;
+
+  --color-parchment: #f9f3ec;
+
+  --color-bark-50: #f7f3f0;
+  --color-bark-100: #ede4dc;
+  --color-bark-200: #d9c7b8;
+  --color-bark-300: #bfa48e;
+  --color-bark-400: #a07c5e;
+  --color-bark-500: #7d5a3e;
+  --color-bark-600: #634530;
+  --color-bark-700: #4e3325;
+  --color-bark-800: #3c261b;
+  --color-bark-900: #2d1b0e;
+
+  --color-linen: #ede8df;
+
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Lato", system-ui, sans-serif;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-parchment: #f9f3ec;
+  --color-terracotta: #c9613a;
+  --color-bark: #2d1b0e;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-parchment);
+  color: var(--color-bark-900);
+  font-family: 'Lato', system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.btn-primary {
+  background-color: var(--color-terracotta-500);
+  color: white;
+  font-weight: 700;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.125rem;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+.btn-primary:hover {
+  background-color: var(--color-terracotta-600);
 }
