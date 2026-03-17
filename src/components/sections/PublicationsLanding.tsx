@@ -50,20 +50,20 @@ export default function PublicationsLanding() {
 
       {/* Filters */}
       <section className="sticky top-16 z-40 bg-parchment/95 backdrop-blur-sm border-b border-linen py-3 px-4">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-3">
+        <div className="max-w-6xl mx-auto flex flex-col gap-3">
           <input
             type="search"
             placeholder="Buscar por título, autor o descripción..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 border border-linen rounded-sm px-4 py-2 font-sans text-sm text-bark-900 bg-white focus:outline-none focus:border-terracotta-400 transition-colors"
+            className="w-full border border-linen rounded-sm px-4 py-2 font-sans text-sm text-bark-900 bg-white focus:outline-none focus:border-terracotta-400 transition-colors"
           />
           <div className="flex gap-2">
             {(["", "disponible", "agotado"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setEstadoFilter(f)}
-                className={`font-sans text-sm px-4 py-2 rounded-sm border transition-colors ${
+                className={`flex-1 font-sans text-sm px-3 py-2 rounded-sm border transition-colors ${
                   estadoFilter === f
                     ? "bg-terracotta-500 text-white border-terracotta-500"
                     : "border-linen text-bark-900 hover:border-terracotta-400"

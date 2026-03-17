@@ -21,14 +21,14 @@ export default function AboutSection() {
               clase a tus necesidades. Trabajamos con arcilla natural, técnicas
               tradicionales y métodos contemporáneos.
             </p>
-            <div className="grid grid-cols-3 gap-4 pt-6 border-t border-linen">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-6 border-t border-linen">
               {[
                 { num: "+5 años", label: "de experiencia" },
                 { num: "+200", label: "alumnos formados" },
                 { num: "9 turnos", label: "diarios disponibles" },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
-                  <div className="font-serif text-2xl text-terracotta-500 font-semibold">
+                  <div className="font-serif text-xl sm:text-2xl text-terracotta-500 font-semibold">
                     {stat.num}
                   </div>
                   <div className="font-sans text-xs text-clay-500 mt-1">{stat.label}</div>
@@ -38,7 +38,7 @@ export default function AboutSection() {
           </div>
 
           {/* Decorative block */}
-          <div className="relative">
+          <div className="relative p-4">
             <div className="aspect-square rounded-sm bg-clay-100 flex items-center justify-center">
               <div className="text-center p-8">
                 <div className="text-8xl mb-4">🏺</div>
@@ -47,8 +47,8 @@ export default function AboutSection() {
                 </p>
               </div>
             </div>
-            <div className="absolute -top-4 -left-4 w-24 h-24 border-2 border-terracotta-300 rounded-sm" />
-            <div className="absolute -bottom-4 -right-4 w-24 h-24 border-2 border-terracotta-300 rounded-sm" />
+            <div className="absolute top-0 left-0 w-16 h-16 border-2 border-terracotta-300 rounded-sm pointer-events-none" />
+            <div className="absolute bottom-0 right-0 w-16 h-16 border-2 border-terracotta-300 rounded-sm pointer-events-none" />
           </div>
         </div>
       </div>
