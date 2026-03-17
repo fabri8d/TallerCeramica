@@ -1,51 +1,49 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const navLinks = [
-  { href: "#nosotros", label: "Nosotros" },
-  { href: "#galeria", label: "Galería" },
-  { href: "#precios", label: "Precios" },
-  { href: "#reservas", label: "Reservar" },
-  { href: "#contacto", label: "Contacto" },
+  { href: "/", label: "Galería" },
+  { href: "/taller", label: "El Taller" },
+  { href: "/taller#reservas", label: "Reservar" },
 ];
 
 export default function Header() {
+  const pathname = usePathname();
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-parchment/95 backdrop-blur-sm border-b border-linen">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <span className="font-serif text-xl font-semibold text-bark-900">
-              Taller de Cerámica
+              Susana Biondi
             </span>
           </Link>
 
-          {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-6">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
-                className="font-sans text-sm text-bark-900 hover:text-terracotta-500 transition-colors"
+                className={`font-sans text-sm transition-colors ${
+                  pathname === link.href
+                    ? "text-terracotta-500 font-bold"
+                    : "text-bark-900 hover:text-terracotta-500"
+                }`}
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
-            <a
-              href="#reservas"
-              className="bg-terracotta-500 hover:bg-terracotta-600 text-white font-sans text-sm font-bold px-4 py-2 rounded-sm transition-colors"
-            >
-              Reservar turno
-            </a>
           </nav>
 
-          {/* Mobile CTA */}
-          <a
-            href="#reservas"
-            className="md:hidden bg-terracotta-500 text-white text-sm font-bold px-4 py-2 rounded-sm"
+          <Link
+            href="/taller#reservas"
+            className="bg-terracotta-500 hover:bg-terracotta-600 text-white font-sans text-sm font-bold px-4 py-2 rounded-sm transition-colors"
           >
-            Reservar
-          </a>
+            Reservar turno
+          </Link>
         </div>
       </div>
     </header>

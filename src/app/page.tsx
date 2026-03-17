@@ -1,23 +1,18 @@
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import HeroSection from "@/components/sections/HeroSection";
-import AboutSection from "@/components/sections/AboutSection";
-import GallerySection from "@/components/sections/GallerySection";
-import PricingSection from "@/components/sections/PricingSection";
-import BookingSection from "@/components/sections/BookingSection";
-import ContactSection from "@/components/sections/ContactSection";
+import PublicationsLanding from "@/components/sections/PublicationsLanding";
+
+export const metadata = {
+  title: "Galería — Taller de Cerámica de Susana Biondi",
+  description: "Obras de cerámica artesanal creadas en el taller. Explorá y consultá por tus favoritas.",
+};
 
 export default function Home() {
   return (
     <>
       <Header />
       <main>
-        <HeroSection />
-        <AboutSection />
-        <GallerySection />
-        <PricingSection />
-        <BookingSection />
-        <ContactSection />
+        <PublicationsLanding />
       </main>
       <Footer />
     </>

@@ -34,3 +34,22 @@ export interface TimeSlot {
   label: string;      // "8:00 AM"
   period: "morning" | "afternoon";
 }
+
+export interface Publication {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  autor: string;
+  materiales: string[];
+  estado: "disponible" | "agotado";
+  created_at: string;
+  media?: PublicationMedia[];
+}
+
+export interface PublicationMedia {
+  id: string;
+  publication_id: string;
+  url: string;
+  type: "image" | "video";
+  display_order: number;
+}
